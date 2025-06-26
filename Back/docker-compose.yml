@@ -1,0 +1,50 @@
+services:
+  api:
+    container_name: backend-test
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    depends_on:
+      mysql-test:
+        condition: service_healthy
+    ports:
+      - 50010:5000
+    volumes:
+      - .:/app
+
+  mysql-test:
+    image: mysql:8.0.36
+    platform: linux/amd64
+    container_name: mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: myapp
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypass
+    volumes:
+      - test-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    ports:
+      - 53306:3306
+
+  pma-test:
+    image: phpmyadmin:latest
+    platform: linux/amd64
+    container_name: pma-test
+    ports:
+      - 63306:80
+    environment:
+      PMA_HOST: mysql-test
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      - mysql-test
+
+volumes:
+  test-mysql-data:
